@@ -1,4 +1,4 @@
-//usr/bin/cc -x c -g -o .buildbin "$0" && ./.buildbin; exit
+//usr/bin/cc -x c -O2 -Wall -o .buildbin "$0" && ./.buildbin; exit
 // vi: ft=c
 
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -338,13 +338,13 @@ exit:
 
 #define HASH_SIZE 20
 char *sha1(char *data, long size) {
-    char hash[HASH_SIZE] = { 0 };
+    unsigned char hash[HASH_SIZE] = { 0 };
     char *hash_string = malloc(HASH_SIZE * 2 + 1);
     mbedtls_sha1_context sha1_context = { 0 };
     long position = 0;
 
     mbedtls_sha1_starts(&sha1_context);
-    mbedtls_sha1_update(&sha1_context, data, size);
+    mbedtls_sha1_update(&sha1_context, (unsigned char*)data, size);
     mbedtls_sha1_finish(&sha1_context, hash);
     for (int i = 0; i < HASH_SIZE; i++) {
         position += sprintf(hash_string + position, "%02x", hash[i] & 0xff);
@@ -406,7 +406,7 @@ char *get_compilation_hash(char *path) {
 
 char *hash_source_cflags(char *path, char **cflags) {
     mbedtls_sha1_context sha1_context = { 0 };
-    char hash[HASH_SIZE] = { 0 };
+    unsigned char hash[HASH_SIZE] = { 0 };
     char *hash_string = malloc(HASH_SIZE * 2 + 1);
     long position = 0;
 
@@ -420,8 +420,8 @@ char *hash_source_cflags(char *path, char **cflags) {
 
     char *cflags_string = cflags_to_str(cflags);
     mbedtls_sha1_starts(&sha1_context);
-    mbedtls_sha1_update(&sha1_context, data, size);
-    mbedtls_sha1_update(&sha1_context, cflags_string, strlen(cflags_string));
+    mbedtls_sha1_update(&sha1_context, (unsigned char*)data, size);
+    mbedtls_sha1_update(&sha1_context, (unsigned char*)cflags_string, strlen(cflags_string));
     mbedtls_sha1_finish(&sha1_context, hash);
     for (int i = 0; i < sizeof(hash); i++) {
         position += sprintf(hash_string + position, "%02x", hash[i] & 0xff);
@@ -544,14 +544,13 @@ int ld(char *out, ...) {
 #define assert(expr) if(expr != 0) return -1
 
 char *raylib_cflags[] = { "-Wall", "-O2", "-DPLATFORM_DESKTOP", 0 };
-char *main_cflags[] = { "-Wall", "-O2", "-Iraylib/src", 0 };
+char *main_cflags[] = { "-Wall", "-O2", "-Iraylib/src", "-Iraygui/src", 0 };
 
 int main(void) {
     mkdir(".build", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     mkdir("bin", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
     assert(cc("raylib/src/rcore.c", ".build/rcore.o", raylib_cflags));
-    assert(cc("raylib/src/rmodels.c", ".build/rmodels.o", raylib_cflags));
     assert(cc("raylib/src/rshapes.c", ".build/rshapes.o", raylib_cflags));
     assert(cc("raylib/src/rtext.c", ".build/rtext.o", raylib_cflags));
     assert(cc("raylib/src/rtextures.c", ".build/rtextures.o", raylib_cflags));
@@ -563,13 +562,11 @@ int main(void) {
         "-lm",
         "-lglfw",
         ".build/rcore.o",
-        ".build/rmodels.o",
         ".build/rshapes.o",
         ".build/rtext.o",
         ".build/rtextures.o",
         ".build/utils.o",
-        ".build/main.o",
-        0
+        ".build/main.o", 0
     ));
 
     INFO("Done");
