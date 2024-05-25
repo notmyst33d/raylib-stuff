@@ -555,10 +555,10 @@ int main(void) {
     assert(cc("raylib/src/rtext.c", ".build/rtext.o", raylib_cflags));
     assert(cc("raylib/src/rtextures.c", ".build/rtextures.o", raylib_cflags));
     assert(cc("raylib/src/utils.c", ".build/utils.o", raylib_cflags));
-    assert(cc("src/main.c", ".build/main.o", main_cflags));
+    assert(cc("src/p1.c", ".build/p1.o", main_cflags));
 
     assert(ld(
-        "bin/main",
+        "bin/p1",
         "-lm",
         "-lglfw",
         ".build/rcore.o",
@@ -566,7 +566,7 @@ int main(void) {
         ".build/rtext.o",
         ".build/rtextures.o",
         ".build/utils.o",
-        ".build/main.o", 0
+        ".build/p1.o", 0
     ));
 
     INFO("Done");
