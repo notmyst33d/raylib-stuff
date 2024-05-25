@@ -1,4 +1,4 @@
-//usr/bin/cc -x c -o .buildbin "$0" && ./.buildbin; exit
+//usr/bin/cc -x c -g -o .buildbin "$0" && ./.buildbin; exit
 // vi: ft=c
 
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdarg.h>
 
 // Platform-specific stuff
 #include <sys/stat.h>
@@ -336,17 +337,17 @@ exit:
 #define ERROR(message, args...) printf("\x1b[1m[%s%s\x1b[0;1m]\x1b[0m "message"\n", RED, "ERROR", ##args);
 
 #define HASH_SIZE 20
-char *sha1(char *data, size_t size) {
-    unsigned char hash[HASH_SIZE] = { 0 };
-    unsigned char *hash_string = malloc(HASH_SIZE * 2 + 1);
+char *sha1(char *data, long size) {
+    char hash[HASH_SIZE] = { 0 };
+    char *hash_string = malloc(HASH_SIZE * 2 + 1);
     mbedtls_sha1_context sha1_context = { 0 };
-    size_t position = 0;
+    long position = 0;
 
     mbedtls_sha1_starts(&sha1_context);
     mbedtls_sha1_update(&sha1_context, data, size);
     mbedtls_sha1_finish(&sha1_context, hash);
-    for (int i = 0; i < sizeof(hash); i++) {
-        position += sprintf(hash_string + position, "%02x", hash[i]);
+    for (int i = 0; i < HASH_SIZE; i++) {
+        position += sprintf(hash_string + position, "%02x", hash[i] & 0xff);
     }
     hash_string[HASH_SIZE * 2] = 0;
 
@@ -361,73 +362,133 @@ long nullsize(char **data) {
     return i;
 }
 
-char *sha1file(char *path) {
-    FILE *f = fopen(path, "r");
-    if (f == 0) {
+char *cflags_to_str(char **cflags) {
+    long cflags_size = nullsize(cflags);
+    if (cflags_size == 0) {
         return 0;
     }
+
+    long strings_length = 0;
+    for (int i = 0; cflags[i] != 0; i++) {
+        strings_length += strlen(cflags[i]);
+    }
+
+    char *out = malloc(strings_length + cflags_size);
+    long position = 0;
+    position += sprintf(out, "%s", cflags[0]);
+    for (int i = 1; i < cflags_size; i++) {
+        position += sprintf(out + position, " %s", cflags[i]);
+    }
+    out[strings_length + cflags_size - 1] = 0;
+
+    return out;
+}
+
+char *get_compilation_hash(char *path) {
+    char build_path[257];
+
+    char *path_hash = sha1(path, strlen(path));
+    sprintf(build_path, ".build/%s", path_hash);
+
+    FILE *f = fopen(build_path, "r");
+    if (f == 0) {
+        free(path_hash);
+        return 0;
+    }
+    char *data = malloc(HASH_SIZE * 2 + 1);
+    fread(data, 40, 1, f);
+    fclose(f);
+    data[40] = 0;
+
+    free(path_hash);
+    return data;
+}
+
+char *hash_source_cflags(char *path, char **cflags) {
+    mbedtls_sha1_context sha1_context = { 0 };
+    char hash[HASH_SIZE] = { 0 };
+    char *hash_string = malloc(HASH_SIZE * 2 + 1);
+    long position = 0;
+
+    FILE *f = fopen(path, "r");
     fseek(f, 0, SEEK_END);
     long size = ftell(f);
     fseek(f, 0, SEEK_SET);
     char *data = malloc(size);
-    if (fread(data, size, 1, f) != 1) {
-        return 0;
-    }
+    fread(data, size, 1, f);
+    fclose(f);
 
-    return sha1(data, size);
+    char *cflags_string = cflags_to_str(cflags);
+    mbedtls_sha1_starts(&sha1_context);
+    mbedtls_sha1_update(&sha1_context, data, size);
+    mbedtls_sha1_update(&sha1_context, cflags_string, strlen(cflags_string));
+    mbedtls_sha1_finish(&sha1_context, hash);
+    for (int i = 0; i < sizeof(hash); i++) {
+        position += sprintf(hash_string + position, "%02x", hash[i] & 0xff);
+    }
+    hash_string[HASH_SIZE * 2] = 0;
+
+    free(data);
+    free(cflags_string);
+    return hash_string;
 }
 
-int needs_recompilation(char *path) {
+int needs_recompilation(char *path, char **cflags) {
     int ret = 1;
-    char hash_path[257];
-    char *path_hash = sha1(path, strlen(path));
-    sprintf(hash_path, ".build/%s", path_hash);
-    FILE *f = fopen(hash_path, "r");
-    if (f == 0) {
+
+    char *previous_hash = get_compilation_hash(path);
+    if (previous_hash == 0) {
         return ret;
     }
-    char buffer[41];
-    fread(buffer, 40, 1, f);
-    buffer[40] = 0;
-    char *hash = sha1file(path);
-    if (strcmp(buffer, hash) == 0) {
+
+    char *new_hash = hash_source_cflags(path, cflags);
+    if (strcmp(previous_hash, new_hash) == 0) {
         ret = 0;
     }
-    free(path_hash);
-    free(hash);
+
+    free(previous_hash);
+    free(new_hash);
     return ret;
 }
 
-void write_recompilation_hash(char *path) {
-    int ret = 1;
-    char hash_path[257];
+void write_recompilation_hash(char *path, char **cflags) {
     char *path_hash = sha1(path, strlen(path));
-    sprintf(hash_path, ".build/%s", path_hash);
-    FILE *f = fopen(hash_path, "w");
-    if (f == 0) {
-        free(path_hash);
-        return;
-    }
-    char *hash = sha1file(path);
-    fwrite(hash, 40, 1, f);
+    char build_path[257];
+
+    sprintf(build_path, ".build/%s", path_hash);
+    FILE *f = fopen(build_path, "w");
+    char *new_hash = hash_source_cflags(path, cflags);
+    fwrite(new_hash, 40, 1, f);
+    fclose(f);
+
     free(path_hash);
-    free(hash);
+    free(new_hash);
     return;
 }
 
-int cc(char *in, char *out) {
+int cc(char *in, char *out, char **cflags) {
     int status;
 
     pid_t pid = fork();
-    if (pid == 0 && needs_recompilation(in)) {
-        char *argv[] = { "cc", "-Iraylib/src", "-Iarena", "-Wall", "-O2", in, "-c", "-o", out, 0 };
+    if (pid == 0 && needs_recompilation(in, cflags)) {
+        long cflags_size = nullsize(cflags);
+        long argv_size = cflags_size + 6;
+        char **argv = malloc(argv_size * sizeof(char*));
+        argv[0] = "cc";
+        memcpy(argv + 1, cflags, cflags_size * sizeof(char*));
+        argv[cflags_size + 1] = in;
+        argv[cflags_size + 2] = "-c";
+        argv[cflags_size + 3] = "-o";
+        argv[cflags_size + 4] = out;
+        argv[argv_size - 1] = 0;
+        //char *argv[] = { "cc", in, "-c", "-o", out, 0 };
         execvp("cc", argv);
         _exit(EXIT_FAILURE);
     } else if (pid == 0) {
         _exit(EXIT_FAILURE);
     }
 
-    if (!needs_recompilation(in)) {
+    if (!needs_recompilation(in, cflags)) {
         INFO("cc %s (cached)", in);
         return 0;
     }
@@ -438,24 +499,35 @@ int cc(char *in, char *out) {
         return -1;
     }
     INFO("cc %s", in);
-    write_recompilation_hash(in);
+    write_recompilation_hash(in, cflags);
 
     return 0;
 }
 
-int ld(char **in, char *out) {
+int ld(char *out, ...) {
     int status;
+    va_list args;
+    va_start(args, out);
 
     pid_t pid = fork();
     if (pid == 0) {
-        long argv_size = nullsize(in) + 4;
+        long argv_size = 4;
         char **argv = malloc(argv_size * sizeof(char*));
         argv[0] = "cc";
         argv[1] = "-o";
         argv[2] = out;
-        memcpy(argv + 3, in, sizeof(char*) * nullsize(in));
+        while (1) {
+            char *arg = va_arg(args, char*);
+            if (arg == 0) {
+                break;
+            }
+            argv_size += 1;
+            argv = realloc(argv, argv_size * sizeof(char*));
+            argv[argv_size - 2] = arg;
+        }
         argv[argv_size - 1] = 0;
         execvp("cc", argv);
+        free(argv);
         _exit(EXIT_FAILURE);
     }
 
@@ -471,12 +543,35 @@ int ld(char **in, char *out) {
 
 #define assert(expr) if(expr != 0) return -1
 
+char *raylib_cflags[] = { "-Wall", "-O2", "-DPLATFORM_DESKTOP", 0 };
+char *main_cflags[] = { "-Wall", "-O2", "-Iraylib/src", 0 };
+
 int main(void) {
     mkdir(".build", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     mkdir("bin", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    assert(cc("src/main.c", ".build/main.o"));
-    char *objects[] = { ".build/main.o", 0 };
-    assert(ld(objects, "bin/main"));
+
+    assert(cc("raylib/src/rcore.c", ".build/rcore.o", raylib_cflags));
+    assert(cc("raylib/src/rmodels.c", ".build/rmodels.o", raylib_cflags));
+    assert(cc("raylib/src/rshapes.c", ".build/rshapes.o", raylib_cflags));
+    assert(cc("raylib/src/rtext.c", ".build/rtext.o", raylib_cflags));
+    assert(cc("raylib/src/rtextures.c", ".build/rtextures.o", raylib_cflags));
+    assert(cc("raylib/src/utils.c", ".build/utils.o", raylib_cflags));
+    assert(cc("src/main.c", ".build/main.o", main_cflags));
+
+    assert(ld(
+        "bin/main",
+        "-lm",
+        "-lglfw",
+        ".build/rcore.o",
+        ".build/rmodels.o",
+        ".build/rshapes.o",
+        ".build/rtext.o",
+        ".build/rtextures.o",
+        ".build/utils.o",
+        ".build/main.o",
+        0
+    ));
+
     INFO("Done");
     return 0;
 }

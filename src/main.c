@@ -1,5 +1,19 @@
-#include <stdio.h>
+#include <raylib.h>
 
 int main(void) {
-    printf("Hello\n");
+    const int screenWidth = 800;
+    const int screenHeight = 450;
+
+    InitWindow(screenWidth, screenHeight, "Testing");
+
+    SetTargetFPS(60);
+    while (!WindowShouldClose()) {
+        BeginDrawing();
+            ClearBackground(RAYWHITE);
+            DrawText("It works!", 190, 200, 20, LIGHTGRAY);
+        EndDrawing();
+    }
+
+    CloseWindow();
+    return 0;
 }
