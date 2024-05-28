@@ -543,8 +543,8 @@ int ld(char *out, ...) {
 
 #define assert(expr) if(expr != 0) return -1
 
-char *raylib_cflags[] = { "-Wall", "-O2", "-DPLATFORM_DESKTOP", 0 };
-char *main_cflags[] = { "-Wall", "-O2", "-Iraylib/src", "-Iraygui/src", 0 };
+char *raylib_cflags[] = { "-g", "-Wall", "-DPLATFORM_DESKTOP", 0 };
+char *main_cflags[] = { "-g", "-Wall", "-Iraylib/src", "-Iraygui/src", 0 };
 
 int main(void) {
     mkdir(".build", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);

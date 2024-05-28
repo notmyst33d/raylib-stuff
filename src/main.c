@@ -8,27 +8,34 @@
 #define GUI_WINDOW_FILE_DIALOG_IMPLEMENTATION
 #include "gui_window_file_dialog.h"
 
-GuiWindowFileDialogState p2_a_file_dialog;
-GuiWindowFileDialogState p2_b_file_dialog;
+GuiWindowFileDialogState file_dialog_table[4] = { 0 };
+#define p2_fd_a file_dialog_table[0]
+#define p2_fd_b file_dialog_table[1]
+#define p3_fd file_dialog_table[2]
+#define p4_fd file_dialog_table[3]
 
 #include "draw.h"
 #include "p1.h"
 #include "p2.h"
+#include "p3.h"
+#include "p4.h"
+#include "p7.h"
 
-void (*views[])() = { draw_p1, draw_p2, 0 };
+void (*views[])() = { draw_p1, draw_p2, draw_p3, draw_p4, draw_p7, 0 };
 
 int main(void) {
     InitWindow(500, 800, "Things");
     SetTargetFPS(30);
 
-    p2_a_file_dialog = InitGuiWindowFileDialog(GetWorkingDirectory());
-    p2_b_file_dialog = InitGuiWindowFileDialog(GetWorkingDirectory());
+    for (int i = 0; i < 4; i++) {
+        file_dialog_table[i] = InitGuiWindowFileDialog(GetWorkingDirectory());
+    }
 
-    Font font = LoadFontEx("resources/default.ttf", 16, 0, 250);
+    Font font = LoadFontEx("resources/default.ttf", 16, 0, 0);
     GuiSetFont(font);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 16);
 
-    long view = 0;
+    int view = 0;
     while (!WindowShouldClose()) {
         BeginDrawing();
 

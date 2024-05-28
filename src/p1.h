@@ -1,17 +1,17 @@
-static char p1_a_data[5][255] = { 0 };
+static char p1_a_data[5][512] = { 0 };
 static int p1_a_active_table[4] = { 0 };
 
-static char p1_b_data[4][255] = { 0 };
+static char p1_b_data[4][512] = { 0 };
 static int p1_b_active_table[3] = { 0 };
 
-static char p1_c_data[4][255] = { 0 };
+static char p1_c_data[4][512] = { 0 };
 static int p1_c_active_table[3] = { 0 };
 
-long draw_p1_a(long offset_y) {
-    long row = 0;
-    long column = 0;
-    long width = 48;
-    long padding = 16;
+int draw_p1_a(int offset_y) {
+    int row = 0;
+    int column = 0;
+    int width = 48;
+    int padding = 16;
 
     char *vars[][2] = { { p1_a_data[0], "A" }, { p1_a_data[1], "B" }, { p1_a_data[2], "C" }, { p1_a_data[3], "D" } };
 
@@ -41,25 +41,19 @@ long draw_p1_a(long offset_y) {
     GuiSetStyle(DEFAULT, TEXT_ALIGNMENT_VERTICAL, TEXT_ALIGN_CENTER);
     column++;
 
-    offset_y += output_bounds.height + padding;
+    DrawLine(0, offset_y + output_bounds.height + padding, 500, offset_y + output_bounds.height + padding, GetColor(GuiGetStyle(LABEL, TEXT)));
 
-    return offset_y;
+    return offset_y + output_bounds.height + padding;
 }
 
-long draw_p1_b(long offset_y) {
-    long width = 48;
-    long padding = 16;
+int draw_p1_b(int offset_y) {
+    int width = 48;
+    int padding = 16;
 
-    // a
     draw_labeled_box((Rectangle){ padding, offset_y + padding + 72 / 2, width, 32 }, "a", p1_b_data[0], p1_b_active_table, 0);
-
-    // b
     draw_labeled_box((Rectangle){ padding + (72 + 240) / 2, offset_y + padding + 120 + padding + 8, width, 32 }, "b", p1_b_data[1], p1_b_active_table, 1);
-
-    // A
     draw_labeled_box((Rectangle){ padding + 72 + padding, offset_y + 60, width, 32 }, "A", p1_b_data[2], p1_b_active_table, 2);
 
-    // c
     GuiLabel((Rectangle){ padding + 72 + 240 - 64, offset_y + 60, 120, 32 }, p1_b_data[3]);
 
     DrawLine(
@@ -102,22 +96,17 @@ long draw_p1_b(long offset_y) {
         sprintf(p1_b_data[3], "c = %f", sqrtf((a * a) + (b * b) - (2 * a * b * cosf(A * (PI / 180)))));
     }
 
-    offset_y += padding + padding + 32;
+    DrawLine(0, offset_y + padding + 32 + padding, 500, offset_y + padding + 32 + padding, GetColor(GuiGetStyle(LABEL, TEXT)));
 
-    return offset_y;
+    return offset_y + padding + 32 + padding;
 }
 
-long draw_p1_c(long offset_y) {
-    long width = 48;
-    long padding = 16;
+int draw_p1_c(int offset_y) {
+    int width = 48;
+    int padding = 16;
 
-    // a
     draw_labeled_box((Rectangle){ padding, offset_y + padding + 72 / 2, width, 32 }, "a", p1_c_data[0], p1_c_active_table, 0);
-
-    // b
     draw_labeled_box((Rectangle){ padding + (72 + 240) / 2, offset_y + padding + 120 + padding + 8, width, 32 }, "b", p1_c_data[1], p1_c_active_table, 1);
-
-    // c
     draw_labeled_box((Rectangle){ padding + 72 + 240 - 64, offset_y + 60, width, 32 }, "c", p1_c_data[2], p1_c_active_table, 2);
 
     DrawLine(
@@ -155,20 +144,14 @@ long draw_p1_c(long offset_y) {
 
     GuiLabel((Rectangle){ padding + 72 + padding, offset_y + 16, 120, 32 }, p1_c_data[3]);
 
-    offset_y += padding + padding + 32;
+    DrawLine(0, offset_y + padding + 32 + padding, 500, offset_y + padding + 32 + padding, GetColor(GuiGetStyle(LABEL, TEXT)));
 
-    return offset_y;
+    return offset_y + padding + 32 + padding;
 }
 
 void draw_p1(void) {
-    long offset_y = 0;
-
+    int offset_y = 0;
     offset_y = draw_p1_a(offset_y);
-    DrawLine(0, offset_y, 500, offset_y, GetColor(GuiGetStyle(LABEL, TEXT)));
-
     offset_y = draw_p1_b(offset_y);
-    DrawLine(0, offset_y, 500, offset_y, GetColor(GuiGetStyle(LABEL, TEXT)));
-
     offset_y = draw_p1_c(offset_y);
-    DrawLine(0, offset_y, 500, offset_y, GetColor(GuiGetStyle(LABEL, TEXT)));
 }
