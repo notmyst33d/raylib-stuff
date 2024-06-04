@@ -64,7 +64,7 @@ int main(void) {
         pthread_create(&thread_pool[i], 0, queue_worker, 0);
     }
 
-    //build_raylib();
+    build_raylib();
     build_main();
 
     while (global_queue.size > 0 && !fail) {
