@@ -1,15 +1,13 @@
-static char p1_a_data[5][512] = { 0 };
-static int p1_a_active_table[4] = { 0 };
+static char p1_a_data[5][512] = { 0 },
+            p1_b_data[4][512] = { 0 },
+            p1_c_data[4][512] = { 0 };
 
-static char p1_b_data[4][512] = { 0 };
-static int p1_b_active_table[3] = { 0 };
-
-static char p1_c_data[4][512] = { 0 };
-static int p1_c_active_table[3] = { 0 };
+static int p1_a_active_table[4] = { 0 },
+           p1_b_active_table[3] = { 0 },
+           p1_c_active_table[3] = { 0 };
 
 int draw_p1_a(int offset_y) {
     int row = 0;
-    int column = 0;
     int width = 48;
     int padding = 16;
 
@@ -39,7 +37,6 @@ int draw_p1_a(int offset_y) {
     GuiSetStyle(DEFAULT, TEXT_ALIGNMENT_VERTICAL, TEXT_ALIGN_TOP);
     GuiLabel(output_bounds, p1_a_data[4]);
     GuiSetStyle(DEFAULT, TEXT_ALIGNMENT_VERTICAL, TEXT_ALIGN_CENTER);
-    column++;
 
     DrawLine(0, offset_y + output_bounds.height + padding, 500, offset_y + output_bounds.height + padding, GetColor(GuiGetStyle(LABEL, TEXT)));
 

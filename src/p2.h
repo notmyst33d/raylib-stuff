@@ -1,5 +1,4 @@
-static int p2_a_message_frames = 0;
-static int p2_a_message_show = 0;
+static int p2_a_message_frames = 0, p2_a_message_show = 0;
 
 static char p2_b_output[512] = { 0 };
 
@@ -12,6 +11,7 @@ int draw_p2_a(int offset_y) {
         strcpy(file_path, TextFormat("%s" PATH_SEPERATOR "%s", p2_fd_a.dirPathText, p2_fd_a.fileNameText));
         char *data = LoadFileText(file_path);
         sscanf(data, "%d\n%d\n%d\n%d", nums, nums + 1, nums + 2, nums + 3);
+        UnloadFileText(data);
         FILE *ef = fopen("even.txt", "w");
         FILE *of = fopen("odd.txt", "w");
         for (int i = 0; nums[i] != 0; i++) {
@@ -59,6 +59,7 @@ int draw_p2_b(int offset_y) {
         strcpy(file_path, TextFormat("%s" PATH_SEPERATOR "%s", p2_fd_b.dirPathText, p2_fd_b.fileNameText));
         char *data = LoadFileText(file_path);
         sscanf(data, "%d\n%d\n%d", &a, &b, &c);
+        UnloadFileText(data);
 
         if (a + b > c && b + c > a && a + c > b) {
             is_triangle = 1;

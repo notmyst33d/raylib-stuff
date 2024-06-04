@@ -1,7 +1,7 @@
-static char p3_a_data[11][512] = { 0 };
-static int p3_a_active_table[10] = { 0 };
+static char p3_a_data[11][512] = { 0 },
+            p3_b_output[512] = { 0 };
 
-static char p3_b_output[512] = { 0 };
+static int p3_a_active_table[10] = { 0 };
 
 int draw_p3_a(int offset_y) {
     int padding = 16;
@@ -168,6 +168,7 @@ int draw_p3_b(int offset_y) {
                 sprintf(p3_b_output, "Unknown character");
                 break;
         }
+        UnloadFileText(data);
 
         p3_fd.SelectFilePressed = 0;
     }

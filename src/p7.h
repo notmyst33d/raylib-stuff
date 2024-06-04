@@ -1,17 +1,12 @@
-static int p7_scroll_index = 0;
-static int p7_array[512] = { 0 };
-static int p7_array_size = 0;
-static char p7_array_string[4096] = { 0 };
-static char p7_output[3][512] = { 0 };
+static int p7_scroll_index = 0,
+           p7_array[512] = { 0 },
+           p7_array_size = 0;
 
-void clear_array(void) {
-    for (int i = 0; i < 512; i++) {
-        p7_array[i] = 0;
-    }
-}
+static char p7_array_string[4096] = { 0 },
+            p7_output[3][512] = { 0 };
 
 void generate_array(void) {
-    clear_array();
+    clear_memory((char*)p7_array, 512 * sizeof(int));
     p7_array_size = GetRandomValue(4, 16);
 
     int string_position = 0;
