@@ -23,7 +23,7 @@ void build_main(void) {
     cc("src/main.c", "out/main.o");
 }
 
-int link_main(void) {
+void link_main(void) {
     ld("out/main", (char*[]){
         "out/main.o",
         "out/raylib/rcore.o",
